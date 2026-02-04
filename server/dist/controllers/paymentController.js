@@ -36,19 +36,67 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getPaymentStatus = exports.handleStripeWebhook = exports.createCheckoutSession = void 0;
+exports.getPaymentStatus = exports.handleStripeWebhook = exports.createCheckoutSession = exports.createPaymentLink = void 0;
 const database_1 = __importDefault(require("../config/database"));
 const stripe_1 = __importStar(require("../config/stripe"));
 const nodemailer_1 = __importDefault(require("nodemailer"));
 const emailTransporter = nodemailer_1.default.createTransport({
     host: process.env.EMAIL_HOST,
     port: parseInt(process.env.EMAIL_PORT || '587'),
-    secure: false,
+    secure: process.env.EMAIL_SECURE === 'true',
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
     },
 });
+// NEW: Payment Links method (recommended)
+const createPaymentLink = async (req, res) => {
+    const { taskType, content } = req.body;
+    const userId = req.user.userId;
+    try {
+        // First, create a temporary essay record (pending payment)
+        const essayResult = await database_1.default.query('INSERT INTO essays (user_id, task_type, content, status) VALUES ($1, $2, $3, $4) RETURNING id', [userId, taskType, content, 'pending_payment']);
+        const essayId = essayResult.rows[0].id;
+        // Get user info for email
+        const userResult = await database_1.default.query('SELECT email, name FROM users WHERE id = $1', [userId]);
+        const user = userResult.rows[0];
+        // Determine price based on task type
+        const priceConfig = taskType === 'task1' ? stripe_1.PRICES.TASK1 : stripe_1.PRICES.TASK2;
+        // Create Payment Link instead of session
+        const paymentLink = await stripe_1.default.paymentLinks.create({
+            after_completion: {
+                type: 'redirect',
+                redirect: {
+                    url: `${process.env.FRONTEND_URL}/payment/success?essay_id=${essayId}`
+                }
+            },
+            line_items: [{
+                    price: `${priceConfig.amount}_price_${Date.now()}`,
+                    price_data: {
+                        currency: 'usd',
+                        product_data: {
+                            name: priceConfig.name,
+                            description: `Professional feedback for your IELTS ${taskType === 'task1' ? 'Task 1' : 'Task 2'} essay`,
+                        },
+                        unit_amount: priceConfig.amount,
+                    },
+                    quantity: 1,
+                }],
+        });
+        // Create payment record
+        await database_1.default.query('INSERT INTO payments (user_id, essay_id, amount, currency, status, stripe_payment_intent_id) VALUES ($1, $2, $3, $4, $5, $6)', [userId, essayId, priceConfig.amount / 100, 'usd', 'pending', paymentLink.id]);
+        res.json({
+            paymentUrl: paymentLink.url,
+            essayId
+        });
+    }
+    catch (error) {
+        console.error('Create payment link error:', error);
+        res.status(500).json({ error: 'Failed to create payment link' });
+    }
+};
+exports.createPaymentLink = createPaymentLink;
+// OLD: Checkout Sessions (deprecated but kept for compatibility)
 const createCheckoutSession = async (req, res) => {
     const { taskType, content } = req.body;
     const userId = req.user.userId;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { redirectToCheckout } from '../services/stripe'
+import { redirectToPayment } from '../services/stripe'
 import { EssaySubmission } from '../services/essay'
 
 const SubmitEssay: React.FC = () => {
@@ -51,8 +51,8 @@ const SubmitEssay: React.FC = () => {
     }
 
     try {
-      await redirectToCheckout(formData.taskType, formData.content)
-      // If redirectToCheckout succeeds, user will be redirected to Stripe
+      await redirectToPayment(formData.taskType, formData.content)
+      // If redirectToPayment succeeds, user will be redirected to Stripe
       // This code will only execute if there's an error
       setError('Unexpected error during payment redirect')
     } catch (err: any) {

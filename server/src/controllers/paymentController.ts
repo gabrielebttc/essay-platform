@@ -8,13 +8,75 @@ import Stripe from 'stripe'
 const emailTransporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
   port: parseInt(process.env.EMAIL_PORT || '587'),
-  secure: false,
+  secure: process.env.EMAIL_SECURE === 'true',
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
 })
 
+// NEW: Payment Links method (recommended)
+export const createPaymentLink = async (req: any, res: Response) => {
+  const { taskType, content } = req.body
+  const userId = req.user.userId
+
+  try {
+    // First, create a temporary essay record (pending payment)
+    const essayResult = await pool.query(
+      'INSERT INTO essays (user_id, task_type, content, status) VALUES ($1, $2, $3, $4) RETURNING id',
+      [userId, taskType, content, 'pending_payment']
+    )
+    const essayId = essayResult.rows[0].id
+
+    // Get user info for email
+    const userResult = await pool.query(
+      'SELECT email, name FROM users WHERE id = $1',
+      [userId]
+    )
+    const user = userResult.rows[0]
+
+    // Determine price based on task type
+    const priceConfig = taskType === 'task1' ? PRICES.TASK1 : PRICES.TASK2
+
+    // Create Payment Link instead of session
+    const paymentLink = await stripe.paymentLinks.create({
+      after_completion: {
+        type: 'redirect',
+        redirect: {
+          url: `${process.env.FRONTEND_URL}/payment/success?essay_id=${essayId}`
+        }
+      },
+      line_items: [{
+        price: `${priceConfig.amount}_price_${Date.now()}`,
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: priceConfig.name,
+            description: `Professional feedback for your IELTS ${taskType === 'task1' ? 'Task 1' : 'Task 2'} essay`,
+          },
+          unit_amount: priceConfig.amount,
+        },
+        quantity: 1,
+      }],
+    })
+
+    // Create payment record
+    await pool.query(
+      'INSERT INTO payments (user_id, essay_id, amount, currency, status, stripe_payment_intent_id) VALUES ($1, $2, $3, $4, $5, $6)',
+      [userId, essayId, priceConfig.amount / 100, 'usd', 'pending', paymentLink.id]
+    )
+
+    res.json({ 
+      paymentUrl: paymentLink.url,
+      essayId 
+    })
+  } catch (error) {
+    console.error('Create payment link error:', error)
+    res.status(500).json({ error: 'Failed to create payment link' })
+  }
+}
+
+// OLD: Checkout Sessions (deprecated but kept for compatibility)
 export const createCheckoutSession = async (req: any, res: Response) => {
   const { taskType, content } = req.body
   const userId = req.user.userId

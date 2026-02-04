@@ -1,16 +1,31 @@
 import React, { useState } from 'react'
 import { redirectToPayment } from '../services/stripe'
-import { EssaySubmission } from '../services/essay'
+import { EssaySubmission, EssayType } from '../services/essay'
 
 const SubmitEssay: React.FC = () => {
   const [formData, setFormData] = useState<EssaySubmission>({
-    taskType: 'task2',
+    taskType: '',
     content: '',
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   
-  const [currentWordsCount, setCurrentWordsCount] = useState<Number>(0)
+  const [selectedTaskType, setSelectedTaskType] = useState<EssayType>(
+    { 
+      id: 0,
+      name: '',
+      price: 0,
+      minWords: 0
+    }
+  )
+  const [taskTypes, setTaskTypes] = useState<EssayType[]>([
+    { 
+      id: 0,
+      name: '',
+      price: 0,
+      minWords: 0
+    }
+  ]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({
@@ -18,8 +33,16 @@ const SubmitEssay: React.FC = () => {
       [e.target.name]: e.target.value,
     })
 
-    if(e.target.name == 'content') {
-      setCurrentWordsCount(getWordCount())
+    if(e.target.name == 'taskType') {
+      const currentTaskType: EssayType = taskTypes[Number(e.target.value) - 1]
+      setSelectedTaskType(
+        {
+          id: currentTaskType.id,
+          name: currentTaskType.name,
+          price: currentTaskType.price,
+          minWords: currentTaskType.minWords,
+        }
+      )
     }
   }
 
@@ -64,7 +87,8 @@ const SubmitEssay: React.FC = () => {
   }
 
   const getPrice = () => {
-    return formData.taskType === 'task1' ? '$20.00' : '$25.00'
+    
+    return formData.taskType
   }
 
   const getWordCount = () => {
@@ -101,8 +125,9 @@ const SubmitEssay: React.FC = () => {
                 onChange={handleChange}
                 className="form-input"
               >
-                <option value="task1">IELTS Writing Task 1 (Academic/General) - {getPrice()}</option>
-                <option value="task2">IELTS Writing Task 2 (Essay) - {getPrice()}</option>
+                { taskTypes.map(task => (
+                  <option key={task.id} value={task.id}>{task.name} - {task.price}</option>
+                )) }
               </select>
             </div>
 
@@ -126,21 +151,21 @@ const SubmitEssay: React.FC = () => {
                 </div>
               </div>
               <p className="text-sm text-gray-500 mt-2">
-                Minimum: {formData.taskType === 'task1' ? '150 words' : '250 words'} | Current: {String(currentWordsCount)} words
+                Minimum: {formData.taskType === 'task1' ? '150 words' : '250 words'} | Current: {getWordCount()} words
               </p>
             </div>
 
             <div className="mb-6 p-4 bg-blue-50 rounded-lg">
               <h3 className="font-medium text-gray-900 mb-2">What you'll get:</h3>
               <ul className="text-sm text-gray-600 space-y-1">
-                <li>• Overall band score (1-9)</li>
-                <li>• Individual scores for each IELTS criterion</li>
-                <li>• Detailed written feedback</li>
-                <li>• Improved version suggestions (optional)</li>
-                <li>• 24-48 hour turnaround time</li>
+                <li> Overall band score (1-9)</li>
+                <li> Individual scores for each IELTS criterion</li>
+                <li> Detailed written feedback</li>
+                <li> Improved version suggestions (optional)</li>
+                <li> 24-48 hour turnaround time</li>
               </ul>
               <div className="mt-3 text-lg font-bold text-blue-600">
-                Total: {getPrice()}
+                Total: {selectedTaskType.price}
               </div>
             </div>
 
@@ -149,7 +174,7 @@ const SubmitEssay: React.FC = () => {
               disabled={loading || !formData.content.trim()}
               className="btn btn-primary w-full disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              {loading ? 'Processing...' : `Proceed to Payment (${getPrice()})`}
+              {loading ? 'Processing...' : `Proceed to Payment (${selectedTaskType.price})`}
             </button>
 
             <p className="text-xs text-gray-500 mt-4 text-center">

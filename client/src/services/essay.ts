@@ -2,7 +2,7 @@ import { api } from './api'
 import { Essay } from '../types'
 
 export interface EssaySubmission {
-  taskType: 'task1' | 'task2'
+  taskType: string
   content: string
 }
 
@@ -10,6 +10,13 @@ export interface CreateEssayResponse {
   essay: Essay
   paymentUrl?: string
   sessionId?: string
+}
+
+export interface EssayType {
+  id: number
+  name: string
+  price: number,
+  minWords: number
 }
 
 export const essayService = {

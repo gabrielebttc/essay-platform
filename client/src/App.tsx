@@ -9,6 +9,8 @@ import Dashboard from './pages/Dashboard'
 import SubmitEssay from './pages/SubmitEssay'
 import EssayList from './pages/EssayList'
 import EssayDetail from './pages/EssayDetail'
+import PaymentSuccess from './pages/PaymentSuccess'
+import PaymentCancel from './pages/PaymentCancel'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminSubmissions from './pages/admin/AdminSubmissions'
 import AdminEssayDetail from './pages/admin/AdminEssayDetail'
@@ -75,6 +77,14 @@ function App() {
         <Route 
           path="/essays/:id" 
           element={user ? <EssayDetail /> : <Navigate to="/login" />} 
+        />
+        <Route 
+          path="/payment/success" 
+          element={user ? <PaymentSuccess /> : <Navigate to="/login" />} 
+        />
+        <Route 
+          path="/payment/cancel" 
+          element={user ? <PaymentCancel /> : <Navigate to="/login" />} 
         />
         <Route 
           path="/admin" 

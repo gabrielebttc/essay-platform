@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS payments (
     essay_id UUID NOT NULL REFERENCES essays(id) ON DELETE CASCADE,
     amount DECIMAL(10,2) NOT NULL,
     currency VARCHAR(3) NOT NULL DEFAULT 'USD',
-    status VARCHAR(50) NOT NULL DEFAULT 'pending',
+    status VARCHAR(50) NOT NULL DEFAULT 'pending', -- 'pending', 'completed', 'failed'
     stripe_payment_intent_id VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -59,5 +59,5 @@ CREATE INDEX IF NOT EXISTS idx_payments_essay_id ON payments(essay_id);
 
 -- Insert admin user (password: admin123)
 INSERT INTO users (email, name, password_hash, role) 
-VALUES ('admin@ielts.com', 'Admin', '$2a$10$rOzJqQjQjQjQjQjQjQjQjOzJqQjQjQjQjQjQjQjQjQjQjQjQjQjQjQj', 'admin')
+VALUES ('admin@ielts.com', 'Admin', '$2y$10$5hc2JeepHPx7ysfSc3yTHOc1dKh.dEwrhM69kN8Z4FuiYYcNygAoG', 'admin')
 ON CONFLICT (email) DO NOTHING;

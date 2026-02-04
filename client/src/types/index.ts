@@ -12,7 +12,7 @@ export interface Essay {
   userId: string
   taskType: 'task1' | 'task2'
   content: string
-  status: 'pending' | 'in_review' | 'completed'
+  status: 'pending_payment' | 'pending' | 'in_review' | 'completed'
   submittedAt: string
   paymentId?: string
   feedback?: EssayFeedback

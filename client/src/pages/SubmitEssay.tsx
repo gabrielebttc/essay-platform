@@ -9,12 +9,18 @@ const SubmitEssay: React.FC = () => {
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  
+  const [currentWordsCount, setCurrentWordsCount] = useState<Number>(0)
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     })
+
+    if(e.target.name == 'content') {
+      setCurrentWordsCount(getWordCount())
+    }
   }
 
   const validateEssay = () => {
@@ -120,7 +126,7 @@ const SubmitEssay: React.FC = () => {
                 </div>
               </div>
               <p className="text-sm text-gray-500 mt-2">
-                Minimum: {formData.taskType === 'task1' ? '150 words' : '250 words'} | Current: {getWordCount()} words
+                Minimum: {formData.taskType === 'task1' ? '150 words' : '250 words'} | Current: {String(currentWordsCount)} words
               </p>
             </div>
 

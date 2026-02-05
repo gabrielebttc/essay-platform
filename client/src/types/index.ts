@@ -10,7 +10,7 @@ export interface User {
 export interface Essay {
   id: string
   userId: string
-  taskType: 'task1' | 'task2'
+  taskTypeId: string
   content: string
   status: 'pending_payment' | 'pending' | 'in_review' | 'completed'
   submittedAt: string

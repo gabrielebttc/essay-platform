@@ -2,7 +2,7 @@ import { api } from './api'
 import { Essay, EssayType } from '../types'
 
 export interface EssaySubmission {
-  taskType: string
+  taskTypeId: string
   content: string
 }
 

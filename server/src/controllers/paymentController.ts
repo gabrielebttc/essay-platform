@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
 import pool from '../config/database'
-import stripe, { PRICES } from '../config/stripe'
+import stripe from '../config/stripe'
 import { generateToken } from '../utils/jwt'
 import nodemailer from 'nodemailer'
 import Stripe from 'stripe'
@@ -16,14 +16,14 @@ const emailTransporter = nodemailer.createTransport({
 })
 
 export const createPaymentLink = async (req: any, res: Response) => {
-  const { taskType, content } = req.body
+  const { taskTypeId, content } = req.body
   const userId = req.user.userId
 
   try {
     // Create essay record
     const essayResult = await pool.query(
-      'INSERT INTO essays (user_id, task_type, content, status) VALUES ($1, $2, $3, $4) RETURNING id',
-      [userId, taskType, content, 'pending_payment']
+      'INSERT INTO essays (user_id, task_type_id, content, status) VALUES ($1, $2, $3, $4) RETURNING id',
+      [userId, taskTypeId, content, 'pending_payment']
     )
     const essayId = essayResult.rows[0].id
 
@@ -34,10 +34,14 @@ export const createPaymentLink = async (req: any, res: Response) => {
     )
     const user = userResult.rows[0]
 
-    // Determine price
-    const priceConfig = taskType === 'task1' ? PRICES.TASK1 : PRICES.TASK2
+    const taskTypeResult = await pool.query(
+      'SELECT * FROM essay_types WHERE id = $1',
+      [taskTypeId]
+    )
 
-    // CORRETTO: Payment Links format
+    const taskType = taskTypeResult.rows[0]
+
+    // Payment Links format
     const paymentLink = await stripe.paymentLinks.create({
       after_completion: {
         type: 'redirect',
@@ -49,10 +53,10 @@ export const createPaymentLink = async (req: any, res: Response) => {
         price_data: {
           currency: 'usd',
           product_data: {
-            name: priceConfig.name,
-            description: `IELTS ${taskType === 'task1' ? 'Task 1' : 'Task 2'} Review`,
+            name: taskType.name,
+            description: `${taskType.name} - Review`,
           },
-          unit_amount: priceConfig.amount,
+          unit_amount: taskType.price * 100,
         },
         quantity: 1,
       }],
@@ -61,7 +65,7 @@ export const createPaymentLink = async (req: any, res: Response) => {
     // Create payment record
     await pool.query(
       'INSERT INTO payments (user_id, essay_id, amount, currency, status, stripe_payment_intent_id) VALUES ($1, $2, $3, $4, $5, $6)',
-      [userId, essayId, priceConfig.amount / 100, 'usd', 'pending', paymentLink.id]
+      [userId, essayId, taskType.price, 'usd', 'pending', paymentLink.id]
     )
 
     res.json({ 
@@ -71,70 +75,6 @@ export const createPaymentLink = async (req: any, res: Response) => {
   } catch (error) {
     console.error('Create payment link error:', error)
     res.status(500).json({ error: 'Failed to create payment link' })
-  }
-}
-
-
-// OLD: Checkout Sessions (deprecated but kept for compatibility)
-export const createCheckoutSession = async (req: any, res: Response) => {
-  const { taskType, content } = req.body
-  const userId = req.user.userId
-
-  try {
-    // First, create a temporary essay record (pending payment)
-    const essayResult = await pool.query(
-      'INSERT INTO essays (user_id, task_type, content, status) VALUES ($1, $2, $3, $4) RETURNING id',
-      [userId, taskType, content, 'pending_payment']
-    )
-    const essayId = essayResult.rows[0].id
-
-    // Get user info for email
-    const userResult = await pool.query(
-      'SELECT email, name FROM users WHERE id = $1',
-      [userId]
-    )
-    const user = userResult.rows[0]
-
-    // Determine price based on task type
-    const priceConfig = taskType === 'task1' ? PRICES.TASK1 : PRICES.TASK2
-
-    // Create Stripe checkout session
-    const session = await stripe.checkout.sessions.create({
-      customer_email: user.email,
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: priceConfig.name,
-              description: `Professional feedback for your IELTS ${taskType === 'task1' ? 'Task 1' : 'Task 2'} essay`,
-            },
-            unit_amount: priceConfig.amount,
-          },
-          quantity: 1,
-        },
-      ],
-      mode: 'payment',
-      success_url: `${process.env.FRONTEND_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.FRONTEND_URL}/payment/cancel?essay_id=${essayId}`,
-      metadata: {
-        essayId: essayId,
-        userId: userId,
-        taskType: taskType,
-      },
-    })
-
-    // Create payment record
-    await pool.query(
-      'INSERT INTO payments (user_id, essay_id, amount, currency, status, stripe_payment_intent_id) VALUES ($1, $2, $3, $4, $5, $6)',
-      [userId, essayId, priceConfig.amount / 100, 'usd', 'pending', session.payment_intent as string]
-    )
-
-    res.json({ sessionId: session.id, essayId })
-  } catch (error) {
-    console.error('Create checkout session error:', error)
-    res.status(500).json({ error: 'Failed to create payment session' })
   }
 }
 

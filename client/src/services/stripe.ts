@@ -1,9 +1,9 @@
 import { api } from './api'
 
-export const redirectToPayment = async (taskType: string, content: string) => {
+export const redirectToPayment = async (taskTypeId: string, content: string) => {
   try {
     const response = await api.post('/payments/create-payment-link', {
-      taskType,
+      taskTypeId,
       content,
     })
 

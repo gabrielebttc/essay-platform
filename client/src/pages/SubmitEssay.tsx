@@ -5,7 +5,7 @@ import { EssayType } from '../types'
 
 const SubmitEssay: React.FC = () => {
   const [formData, setFormData] = useState<EssaySubmission>({
-    taskType: '',
+    taskTypeId: '',
     content: '',
   })
   const [error, setError] = useState('')
@@ -52,7 +52,7 @@ const SubmitEssay: React.FC = () => {
       [e.target.name]: e.target.value,
     })
 
-    if(e.target.name == 'taskType') {
+    if(e.target.name == 'taskTypeId') {
       
       // find the id to use to find the selectedEssayType
       const selectedId: string = e.target.value
@@ -73,8 +73,6 @@ const SubmitEssay: React.FC = () => {
   }
 
   const validateEssay = () => {
-    console.log("VALIDOOOO")
-    //const minLength = selectedEssayType.minWords
     const wordCount = formData.content.trim().split(/\s+/).length
 
     if(selectedEssayType.minWords) {
@@ -105,7 +103,7 @@ const SubmitEssay: React.FC = () => {
     }
 
     try {
-      await redirectToPayment(formData.taskType, formData.content)
+      await redirectToPayment(formData.taskTypeId, formData.content)
       // If redirectToPayment succeeds, user will be redirected to Stripe
       // This code will only execute if there's an error
       setError('Unexpected error during payment redirect')
@@ -145,9 +143,9 @@ const SubmitEssay: React.FC = () => {
                 Task Type
               </label>
               <select
-                id="taskType"
-                name="taskType"
-                value={formData.taskType}
+                id="taskTypeId"
+                name="taskTypeId"
+                value={formData.taskTypeId}
                 onChange={handleChange}
                 className="form-input"
               >

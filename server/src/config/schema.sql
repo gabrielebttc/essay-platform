@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS essays (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    task_type VARCHAR(20) NOT NULL,
+    task_type_id UUID NOT NULL REFERENCES essay_types(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
     status VARCHAR(50) NOT NULL DEFAULT 'pending',
     submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -72,5 +72,5 @@ ON CONFLICT (email) DO NOTHING;
 
 -- Insert 2 standard essay types
 INSERT INTO essay_types (name, price, min_words)
-VALUES ('IELTS ESSAY Task 1', 20, 250),
+VALUES ('IELTS ESSAY Task 1', 20, 150),
 ('IELTS ESSAY Task 2', 25, 250);

@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { redirectToPayment } from '../services/stripe'
-import { EssaySubmission, EssayType } from '../services/essay'
+import { essayService, EssaySubmission } from '../services/essay'
+import { EssayType } from '../types'
 
 const SubmitEssay: React.FC = () => {
   const [formData, setFormData] = useState<EssaySubmission>({
@@ -10,22 +11,40 @@ const SubmitEssay: React.FC = () => {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   
-  const [selectedTaskType, setSelectedTaskType] = useState<EssayType>(
+  const [selectedEssayType, setSelectedEssayType] = useState<EssayType>(
     { 
-      id: 0,
+      id: '',
       name: '',
       price: 0,
       minWords: 0
     }
   )
-  const [taskTypes, setTaskTypes] = useState<EssayType[]>([
-    { 
-      id: 0,
-      name: '',
-      price: 0,
-      minWords: 0
+  const [essayTypes, setEssayTypes] = useState<EssayType[]>([
+      { 
+        id: '',
+        name: '',
+        price: 0,
+        minWords: 0
+      }
+    ]
+  )
+
+  useEffect( () => {
+    const fetchEssayTypes = async () => {
+      try {
+          setLoading(true)
+          const response = await essayService.getEssayTypes()
+          setEssayTypes(response)
+        } catch (err: any) {
+          setError(err.response?.data?.error || 'Get All Essay Types Failed')
+        } finally {
+          setLoading(false)
+        }
     }
-  ]);
+
+    fetchEssayTypes()
+    
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({
@@ -34,30 +53,40 @@ const SubmitEssay: React.FC = () => {
     })
 
     if(e.target.name == 'taskType') {
-      const currentTaskType: EssayType = taskTypes[Number(e.target.value) - 1]
-      setSelectedTaskType(
-        {
-          id: currentTaskType.id,
-          name: currentTaskType.name,
-          price: currentTaskType.price,
-          minWords: currentTaskType.minWords,
-        }
-      )
+      
+      // find the id to use to find the selectedEssayType
+      const selectedId: string = e.target.value
+
+      const currentTaskType: EssayType | undefined = essayTypes.find(type => type.id === selectedId)
+
+      if (currentTaskType){
+        setSelectedEssayType(
+          {
+            id: currentTaskType.id,
+            name: currentTaskType.name,
+            price: currentTaskType.price,
+            minWords: currentTaskType.minWords,
+          }
+        )
+      }
     }
   }
 
   const validateEssay = () => {
-    const minLength = formData.taskType === 'task1' ? 150 : 250
+    console.log("VALIDOOOO")
+    //const minLength = selectedEssayType.minWords
     const wordCount = formData.content.trim().split(/\s+/).length
-    
-    if (formData.content.trim().length < minLength) {
-      setError(`Your essay must be at least ${minLength} characters long (current: ${formData.content.trim().length})`)
-      return false
-    }
-    
-    if (wordCount < (formData.taskType === 'task1' ? 150 : 250)) {
-      setError(`Your essay should be at least ${formData.taskType === 'task1' ? 150 : 250} words long (current: ${wordCount})`)
-      return false
+
+    if(selectedEssayType.minWords) {
+      if (formData.content.trim().length < selectedEssayType.minWords) {
+        setError(`Your essay must be at least ${selectedEssayType.minWords} characters long (current: ${formData.content.trim().length})`)
+        return false
+      }
+      
+      if (selectedEssayType.minWords && wordCount < selectedEssayType.minWords) {
+        setError(`Your essay should be at least ${selectedEssayType.minWords} words long (current: ${wordCount})`)
+        return false
+      }
     }
     
     return true
@@ -68,7 +97,9 @@ const SubmitEssay: React.FC = () => {
     setLoading(true)
     setError('')
 
-    if (!validateEssay()) {
+    const isEssayValid = validateEssay()
+
+    if (!isEssayValid) {
       setLoading(false)
       return
     }
@@ -84,11 +115,6 @@ const SubmitEssay: React.FC = () => {
     } finally {
       setLoading(false)
     }
-  }
-
-  const getPrice = () => {
-    
-    return formData.taskType
   }
 
   const getWordCount = () => {
@@ -109,7 +135,7 @@ const SubmitEssay: React.FC = () => {
           
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
-              {error}
+              <h1>ERRORREEEEEE:</h1> {error}
             </div>
           )}
 
@@ -125,8 +151,9 @@ const SubmitEssay: React.FC = () => {
                 onChange={handleChange}
                 className="form-input"
               >
-                { taskTypes.map(task => (
-                  <option key={task.id} value={task.id}>{task.name} - {task.price}</option>
+                <option value="" disabled hidden>Select a Task Type</option>
+                { essayTypes.map(essayType => (
+                  <option key={essayType.id} value={essayType.id}>{essayType.name} - {essayType.price}</option>
                 )) }
               </select>
             </div>
@@ -151,7 +178,7 @@ const SubmitEssay: React.FC = () => {
                 </div>
               </div>
               <p className="text-sm text-gray-500 mt-2">
-                Minimum: {formData.taskType === 'task1' ? '150 words' : '250 words'} | Current: {getWordCount()} words
+                Minimum: {selectedEssayType.minWords} | Current: {getWordCount()} words
               </p>
             </div>
 
@@ -165,7 +192,7 @@ const SubmitEssay: React.FC = () => {
                 <li> 24-48 hour turnaround time</li>
               </ul>
               <div className="mt-3 text-lg font-bold text-blue-600">
-                Total: {selectedTaskType.price}
+                Total: {selectedEssayType.price}
               </div>
             </div>
 
@@ -174,7 +201,7 @@ const SubmitEssay: React.FC = () => {
               disabled={loading || !formData.content.trim()}
               className="btn btn-primary w-full disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              {loading ? 'Processing...' : `Proceed to Payment (${selectedTaskType.price})`}
+              {loading ? 'Processing...' : `Proceed to Payment (${selectedEssayType.price})`}
             </button>
 
             <p className="text-xs text-gray-500 mt-4 text-center">

@@ -31,6 +31,13 @@ export interface EssayFeedback {
   completedAt: string
 }
 
+export interface EssayType {
+  id: string
+  name: string
+  price: number
+  minWords: number | null
+}
+
 export interface Payment {
   id: string
   userId: string

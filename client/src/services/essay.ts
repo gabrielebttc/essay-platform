@@ -1,5 +1,5 @@
 import { api } from './api'
-import { Essay } from '../types'
+import { Essay, EssayType } from '../types'
 
 export interface EssaySubmission {
   taskType: string
@@ -10,13 +10,6 @@ export interface CreateEssayResponse {
   essay: Essay
   paymentUrl?: string
   sessionId?: string
-}
-
-export interface EssayType {
-  id: number
-  name: string
-  price: number,
-  minWords: number
 }
 
 export const essayService = {
@@ -37,5 +30,10 @@ export const essayService = {
 
   async deleteEssay(id: string): Promise<void> {
     await api.delete(`/essays/${id}`)
+  },
+
+  async getEssayTypes(): Promise<EssayType[]> {
+    const response = await api.get('/essays/essay-types')
+    return response.data
   },
 }

@@ -50,6 +50,14 @@ CREATE TABLE IF NOT EXISTS payments (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Essay Types table
+CREATE TABLE IF NOT EXISTS essay_types (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(30) NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    min_words NUMERIC(10)
+); 
+
 -- Indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_essays_user_id ON essays(user_id);
 CREATE INDEX IF NOT EXISTS idx_essays_status ON essays(status);
@@ -61,3 +69,8 @@ CREATE INDEX IF NOT EXISTS idx_payments_essay_id ON payments(essay_id);
 INSERT INTO users (email, name, password_hash, role) 
 VALUES ('admin@ielts.com', 'Admin', '$2y$10$5hc2JeepHPx7ysfSc3yTHOc1dKh.dEwrhM69kN8Z4FuiYYcNygAoG', 'admin')
 ON CONFLICT (email) DO NOTHING;
+
+-- Insert 2 standard essay types
+INSERT INTO essay_types (name, price, min_words)
+VALUES ('IELTS ESSAY Task 1', 20, 250),
+('IELTS ESSAY Task 2', 25, 250);

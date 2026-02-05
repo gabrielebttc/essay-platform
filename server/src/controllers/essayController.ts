@@ -149,3 +149,30 @@ export const deleteEssay = async (req: any, res: Response) => {
     res.status(500).json({ error: 'Failed to delete essay' })
   }
 }
+
+export const getEssayTypes = async (req: any, res: Response) => {
+  try {
+    const response = await pool.query(
+      'SELECT * FROM essay_types'
+    )
+
+    if (response.rows.length === 0) {
+      return res.status(404).json({ error: 'No Essay Types found' })
+    }
+
+    const allEssayTypes = response.rows
+
+    // formatting allEssayTypes to return min_words as minWords to the client
+    const allEssayTypesFormatted = response.rows.map(row => ({
+      id: row.id,
+      name: row.name,
+      price: row.price,
+      minWords: row.min_words
+    }));
+
+    return res.status(200).json(allEssayTypesFormatted)
+  } catch (error) {
+    console.error('get all Essay Types error: ', error)
+    res.status(500).json({ error: 'Failed to get all Essay Types' })
+  }
+}

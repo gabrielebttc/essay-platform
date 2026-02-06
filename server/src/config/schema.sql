@@ -64,13 +64,3 @@ CREATE INDEX IF NOT EXISTS idx_essays_status ON essays(status);
 CREATE INDEX IF NOT EXISTS idx_essay_feedback_essay_id ON essay_feedback(essay_id);
 CREATE INDEX IF NOT EXISTS idx_payments_user_id ON payments(user_id);
 CREATE INDEX IF NOT EXISTS idx_payments_essay_id ON payments(essay_id);
-
--- Insert admin user (password: admin123)
-INSERT INTO users (email, name, password_hash, role) 
-VALUES ('admin@ielts.com', 'Admin', '$2y$10$5hc2JeepHPx7ysfSc3yTHOc1dKh.dEwrhM69kN8Z4FuiYYcNygAoG', 'admin')
-ON CONFLICT (email) DO NOTHING;
-
--- Insert 2 standard essay types
-INSERT INTO essay_types (name, price, min_words)
-VALUES ('IELTS ESSAY Task 1', 20, 150),
-('IELTS ESSAY Task 2', 25, 250);

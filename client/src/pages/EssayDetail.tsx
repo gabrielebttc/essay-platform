@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { essayService } from '../services/essay'
-import { Essay } from '../types'
+import { Essay, EssayType } from '../types'
 
 const EssayDetail: React.FC = () => {
   const { id } = useParams()
@@ -10,11 +10,31 @@ const EssayDetail: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  const [essayTypes, setEssayTypes] = useState<EssayType[]>([]);
+  const [loadingEssayTypes, setLoadingEssayTypes] = useState(true);
+  const [errorEssayTypes, setErrorEssayTypes] = useState<string | null>(null);
+
   useEffect(() => {
     if (id) {
       fetchEssay()
     }
   }, [id])
+
+  useEffect(() => {
+    const fetchEssayTypes = async () => {
+      try {
+        setLoadingEssayTypes(true);
+        const data = await essayService.getEssayTypes();
+        setEssayTypes(data);
+      } catch (error) {
+        setErrorEssayTypes('Failed to load essay types.');
+        console.error('Failed to fetch essay types:', error);
+      } finally {
+        setLoadingEssayTypes(false);
+      }
+    };
+    fetchEssayTypes();
+  }, []);
 
   const fetchEssay = async () => {
     try {
@@ -59,6 +79,11 @@ const EssayDetail: React.FC = () => {
     })
   }
 
+  const getTaskTypeName = (taskTypeId: string) => {
+    const type = essayTypes.find(et => et.id === taskTypeId);
+    return type ? type.name : 'Unknown Task Type';
+  };
+
   const handleDeleteEssay = async () => {
     if (!confirm('Are you sure you want to delete this essay? This action cannot be undone.')) {
       return
@@ -72,7 +97,7 @@ const EssayDetail: React.FC = () => {
     }
   }
 
-  if (loading) {
+  if (loading || loadingEssayTypes) {
     return (
       <div className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
@@ -113,6 +138,18 @@ const EssayDetail: React.FC = () => {
     )
   }
 
+  if (errorEssayTypes) {
+    return (
+      <div className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div className="px-4 py-6 sm:px-0">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+            {errorEssayTypes}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
       <div className="px-4 py-6 sm:px-0">
@@ -130,7 +167,7 @@ const EssayDetail: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
-                IELTS Writing {essay.taskType.toUpperCase()}
+                IELTS Writing {getTaskTypeName(essay.taskTypeId).toUpperCase()}
               </h1>
               <p className="text-gray-600 mt-1">
                 Submitted on {formatDate(essay.submittedAt)}

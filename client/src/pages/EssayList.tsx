@@ -1,14 +1,34 @@
 import React, { useState, useEffect } from 'react'
 import { essayService } from '../services/essay'
-import { Essay } from '../types'
+import { Essay, EssayType } from '../types'
 
 const EssayList: React.FC = () => {
   const [essays, setEssays] = useState<Essay[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  const [essayTypes, setEssayTypes] = useState<EssayType[]>([])
+  const [loadingEssayTypes, setLoadingEssayTypes] = useState(true)
+  const [errorEssayTypes, setErrorEssayTypes] = useState<string | null>(null)
+
   useEffect(() => {
     fetchEssays()
+  }, [])
+
+  useEffect(() => {
+    const fetchEssayTypes = async () => {
+      try {
+        setLoadingEssayTypes(true);
+        const data = await essayService.getEssayTypes();
+        setEssayTypes(data);
+      } catch (error) {
+        setErrorEssayTypes('Failed to load essay types.');
+        console.error('Failed to fetch essay types:', error);
+      } finally {
+        setLoadingEssayTypes(false);
+      }
+    };
+    fetchEssayTypes();
   }, [])
 
   const fetchEssays = async () => {
@@ -54,7 +74,12 @@ const EssayList: React.FC = () => {
     })
   }
 
-  if (loading) {
+  const getTaskTypeName = (taskTypeId: string) => {
+    const type = essayTypes.find(et => et.id === taskTypeId);
+    return type ? type.name : 'Unknown Task Type';
+  };
+
+  if (loading || loadingEssayTypes) {
     return (
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
@@ -72,6 +97,18 @@ const EssayList: React.FC = () => {
         </div>
       </div>
     )
+  }
+
+  if (errorEssayTypes) {
+    return (
+      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div className="px-4 py-6 sm:px-0">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+            {errorEssayTypes}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -108,7 +145,7 @@ const EssayList: React.FC = () => {
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
                       <h3 className="text-lg font-medium text-gray-900">
-                        IELTS Writing {essay.taskType.toUpperCase()}
+                        IELTS Writing {getTaskTypeName(essay.taskTypeId).toUpperCase()}
                       </h3>
                       {getStatusBadge(essay.status)}
                     </div>

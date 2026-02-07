@@ -26,7 +26,7 @@ export const getMyEssays = async (req: any, res: Response) => {
     const essays = result.rows.map(row => ({
       id: row.id,
       userId: row.user_id,
-      taskType: row.task_type,
+      taskTypeId: row.task_type_id,
       content: row.content,
       status: row.status,
       submittedAt: row.submitted_at,
@@ -85,7 +85,7 @@ export const getEssayById = async (req: any, res: Response) => {
     const essay = {
       id: row.id,
       userId: row.user_id,
-      taskType: row.task_type,
+      taskTypeId: row.task_type_id,
       content: row.content,
       status: row.status,
       submittedAt: row.submitted_at,

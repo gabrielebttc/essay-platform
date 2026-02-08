@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { essayService } from '../services/essay';
 import { Essay, EssayType } from '../types';
 import { diff_match_patch, DIFF_DELETE, DIFF_INSERT } from 'diff-match-patch';
-import { ArrowLeft, Book, Calendar, CheckCircle, Clock, Edit, Loader2 } from 'lucide-react';
+import { ArrowLeft, Book, Calendar, Clock, Edit, Loader2 } from 'lucide-react';
 
 const EssayDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const reviewKey = searchParams.get('reviewKey');
   const navigate = useNavigate();
   const [essay, setEssay] = useState<Essay | null>(null);
   const [loading, setLoading] = useState(true);
@@ -15,15 +17,41 @@ const EssayDetail: React.FC = () => {
 
   useEffect(() => {
     if (id) {
-      Promise.all([essayService.getEssayById(id), essayService.getEssayTypes()])
-        .then(([fetchedEssay, fetchedEssayTypes]) => {
-          setEssay(fetchedEssay);
+      Promise.all([essayService.getMyEssays(), essayService.getEssayTypes()])
+        .then(([fetchedEssays, fetchedEssayTypes]) => {
           setEssayTypes(fetchedEssayTypes);
+          
+          // Helper to generate the unique key for an essay, mirroring the logic in EssayList
+          const getUniqueKey = (essay: Essay, idCounts: { [key: string]: number }) => {
+            idCounts[essay.id] = (idCounts[essay.id] || 0) + 1;
+            const reviewCount = idCounts[essay.id];
+            return reviewCount > 1 ? `${essay.id}-review-${reviewCount}` : essay.id;
+          };
+
+          const sortedEssays = fetchedEssays.sort((a, b) => new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime());
+          
+          const idCounts: { [key: string]: number } = {};
+          const targetEssay = sortedEssays.find(e => {
+            const uniqueKey = getUniqueKey(e, idCounts);
+            return e.id === id && uniqueKey === reviewKey;
+          });
+
+          if (targetEssay) {
+            setEssay(targetEssay);
+          } else {
+            // Fallback to the first essay with the matching ID if no reviewKey is found (for older links)
+            const firstMatch = sortedEssays.find(e => e.id === id);
+            if (firstMatch) {
+              setEssay(firstMatch);
+            } else {
+              setError('Essay not found.');
+            }
+          }
         })
-        .catch(() => setError('Failed to fetch data'))
+        .catch((err) => setError(`Failed to fetch data: ${err.message}`))
         .finally(() => setLoading(false));
     }
-  }, [id]);
+  }, [id, reviewKey]);
 
   const getTaskTypeName = (taskTypeId: string) => {
     const type = essayTypes.find(et => et.id === taskTypeId);
@@ -31,7 +59,7 @@ const EssayDetail: React.FC = () => {
   };
 
   const diffHtml = useMemo(() => {
-    if (!essay?.feedback?.improvedVersion) return `<p style="white-space: pre-wrap">${essay?.content}</p>`;
+    if (!essay?.content || !essay.feedback?.improvedVersion) return `<p style="white-space: pre-wrap">${essay?.content || ''}</p>`;
     const dmp = new diff_match_patch();
     const diff = dmp.diff_main(essay.content, essay.feedback.improvedVersion);
     dmp.diff_cleanupSemantic(diff);
@@ -66,13 +94,12 @@ const EssayDetail: React.FC = () => {
     return <div className="text-center py-10 text-red-500">{error || 'Essay not found'}</div>;
   }
 
-  const ScoreCard: React.FC<{ title: string, score?: number, comment?: string }> = ({ title, score, comment }) => (
+  const ScoreCard: React.FC<{ title: string, score?: number }> = ({ title, score }) => (
     <div className="bg-gray-50 rounded-lg p-4">
       <div className="flex justify-between items-center">
         <h4 className="font-semibold text-gray-700">{title}</h4>
-        {score && <span className="text-xl font-bold text-indigo-600">{score.toFixed(1)}</span>}
+        {score !== undefined && <span className="text-xl font-bold text-indigo-600">{score}</span>}
       </div>
-      {comment && <p className="mt-2 text-sm text-gray-600" style={{ whiteSpace: 'pre-wrap' }}>{comment}</p>}
     </div>
   );
 
@@ -126,15 +153,15 @@ const EssayDetail: React.FC = () => {
                   <h2 className="text-xl font-bold text-gray-900 text-center mb-4">Feedback Report</h2>
                   <div className="text-center">
                     <p className="text-gray-600">Overall Band Score</p>
-                    <p className="text-5xl font-extrabold text-indigo-600 my-2">{essay.feedback.overallBandScore.toFixed(1)}</p>
+                    <p className="text-5xl font-extrabold text-indigo-600 my-2">{essay.feedback.overallBandScore}</p>
                   </div>
-                  <ScoreCard title="Task Achievement" score={essay.feedback.taskAchievement} comment={essay.feedback.taskAchievementComment} />
-                  <ScoreCard title="Coherence & Cohesion" score={essay.feedback.coherenceCohesion} comment={essay.feedback.coherenceCohesionComment} />
-                  <ScoreCard title="Lexical Resource" score={essay.feedback.lexicalResource} comment={essay.feedback.lexicalResourceComment} />
-                  <ScoreCard title="Grammatical Range & Accuracy" score={essay.feedback.grammaticalRangeAccuracy} comment={essay.feedback.grammaticalRangeAccuracyComment} />
+                  <ScoreCard title="Task Achievement" score={essay.feedback.taskAchievement} />
+                  <ScoreCard title="Coherence & Cohesion" score={essay.feedback.coherence} />
+                  <ScoreCard title="Lexical Resource" score={essay.feedback.lexicalResource} />
+                  <ScoreCard title="Grammatical Range & Accuracy" score={essay.feedback.grammaticalRange} />
                   <div className="bg-gray-50 rounded-lg p-4">
                     <h4 className="font-semibold text-gray-700">General Comment</h4>
-                    <p className="mt-2 text-sm text-gray-600" style={{ whiteSpace: 'pre-wrap' }}>{essay.feedback.generalComment}</p>
+                    <p className="mt-2 text-sm text-gray-600" style={{ whiteSpace: 'pre-wrap' }}>{essay.feedback.comments}</p>
                   </div>
                 </div>
               ) : (

@@ -87,7 +87,7 @@ function App() {
           element={user ? <PaymentCancel /> : <Navigate to="/login" />} 
         />
         <Route 
-          path="/admin" 
+          path="/admin/dashboard" 
           element={user?.role === 'admin' ? <AdminDashboard /> : <Navigate to="/login" />} 
         />
         <Route 

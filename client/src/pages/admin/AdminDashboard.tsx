@@ -1,15 +1,34 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, DollarSign, Users, Clock } from 'lucide-react';
+import { adminService, AdminStats } from '../../services/admin';
+import { BookOpen, DollarSign, Users, Clock, Loader2 } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
-  // Dummy data for stats
-  const stats = [
-    { name: 'Total Submissions', stat: '71,897', icon: BookOpen },
-    { name: 'Pending Review', stat: '5,816', icon: Clock },
-    { name: 'Registered Students', stat: '24,573', icon: Users },
-    { name: 'Total Revenue', stat: '$58,162.00', icon: DollarSign },
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    adminService.getDashboardStats()
+      .then(data => setStats(data))
+      .catch(() => setError('Failed to fetch dashboard stats.'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const statCards = [
+    { name: 'Total Submissions', stat: stats?.totalSubmissions, icon: BookOpen },
+    { name: 'Pending Review', stat: stats?.pendingSubmissions, icon: Clock },
+    { name: 'Registered Students', stat: stats?.registeredStudents, icon: Users },
+    { name: 'Total Revenue', stat: `$${parseFloat(stats?.totalRevenue || '0').toLocaleString()}`, icon: DollarSign },
   ];
+
+  if (loading) {
+    return <div className="flex justify-center items-center h-64"><Loader2 className="animate-spin h-12 w-12 text-indigo-600" /></div>;
+  }
+  
+  if (error) {
+    return <div className="text-center py-10 text-red-500">{error}</div>;
+  }
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -21,9 +40,9 @@ const AdminDashboard: React.FC = () => {
       </header>
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div>
-          <h2 className="text-lg leading-6 font-medium text-gray-900">Last 30 days</h2>
+          <h2 className="text-lg leading-6 font-medium text-gray-900">Platform Statistics</h2>
           <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {stats.map((item) => (
+            {statCards.map((item) => (
               <div key={item.name} className="bg-white overflow-hidden shadow rounded-lg">
                 <div className="p-5">
                   <div className="flex items-center">
@@ -46,7 +65,7 @@ const AdminDashboard: React.FC = () => {
         <div className="mt-8">
           <Link
             to="/admin/submissions"
-            className="w-full block text-center px-4 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="w-full block text-center px-4 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
           >
             Manage All Submissions
           </Link>

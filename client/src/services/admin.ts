@@ -1,7 +1,19 @@
 import { api } from './api';
-import { Essay } from '../types';
+import { Essay, EssayFeedback } from '../types';
+
+export interface AdminStats {
+  totalSubmissions: string;
+  pendingSubmissions: string;
+  registeredStudents: string;
+  totalRevenue: string;
+}
 
 export const adminService = {
+  async getDashboardStats(): Promise<AdminStats> {
+    const response = await api.get('/admin/stats');
+    return response.data;
+  },
+
   async getAllEssays(): Promise<Essay[]> {
     const response = await api.get('/admin/essays');
     return response.data;
@@ -9,6 +21,11 @@ export const adminService = {
 
   async getEssayById(id: string): Promise<Essay> {
     const response = await api.get(`/admin/essays/${id}`);
+    return response.data;
+  },
+
+  async getFeedbackHistory(essayId: string): Promise<EssayFeedback[]> {
+    const response = await api.get(`/admin/essays/${essayId}/history`);
     return response.data;
   },
 

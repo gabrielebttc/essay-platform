@@ -109,7 +109,7 @@ const SubmitEssay: React.FC = () => {
                 <option value="" disabled>Select a Task Type</option>
                 {essayTypes.map(essayType => (
                   <option key={essayType.id} value={essayType.id}>
-                    {essayType.name} - ${parseFloat(essayType.price).toFixed(2)}
+                    {essayType.name} - ${essayType.price} 
                   </option>
                 ))}
               </select>
@@ -154,7 +154,7 @@ const SubmitEssay: React.FC = () => {
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <div className="flex justify-between items-center text-lg font-medium text-gray-900">
                   <span>Total:</span>
-                  <span>${selectedEssayType && selectedEssayType.price !== null ? parseFloat(selectedEssayType.price).toFixed(2) : '0.00'}</span>
+                  <span>${selectedEssayType && selectedEssayType.price !== null ? selectedEssayType.price : '0.00'}</span>
                 </div>
               </div>
 

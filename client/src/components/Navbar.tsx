@@ -31,11 +31,17 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
   );
 
   const adminLinks = (
-    <NavLink to="/admin/submissions" className={({ isActive }) => `${linkClasses} ${isActive ? 'bg-gray-900 text-white' : ''}`}>Admin Panel</NavLink>
+    <>
+      <NavLink to="/admin/dashboard" className={({ isActive }) => `${linkClasses} ${isActive ? 'bg-gray-900 text-white' : ''}`}>Dashboard</NavLink>
+      <NavLink to="/admin/submissions" className={({ isActive }) => `${linkClasses} ${isActive ? 'bg-gray-900 text-white' : ''}`}>Submission History</NavLink>
+    </>
   );
 
   const adminLinksMobile = (
-    <NavLink to="/admin/submissions" className={({ isActive }) => `${mobileLinkClasses} ${isActive ? 'bg-gray-900 text-white' : ''}`}>Admin Panel</NavLink>
+    <>
+      <NavLink to="/admin/dashboard" className={({ isActive }) => `${mobileLinkClasses} ${isActive ? 'bg-gray-900 text-white' : ''}`}>Dashboard</NavLink>
+      <NavLink to="/admin/submissions" className={({ isActive }) => `${mobileLinkClasses} ${isActive ? 'bg-gray-900 text-white' : ''}`}>Submission History</NavLink>
+    </>
   );
 
   return (

@@ -47,11 +47,11 @@ function App() {
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>
+    return <div >Loading...</div>
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div >
       {user && <Navbar user={user} onLogout={logout} />}
       <Routes>
         <Route 

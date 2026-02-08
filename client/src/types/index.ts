@@ -16,6 +16,8 @@ export interface Essay {
   submittedAt: string
   paymentId?: string
   feedback?: EssayFeedback
+  user?: User;
+  paymentStatus?: string;
 }
 
 export interface EssayFeedback {

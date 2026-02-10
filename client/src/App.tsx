@@ -14,6 +14,7 @@ import PaymentCancel from './pages/PaymentCancel'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminSubmissions from './pages/admin/AdminSubmissions'
 import AdminEssayDetail from './pages/admin/AdminEssayDetail'
+import AboutPage from './pages/AboutPage'
 
 function App() {
   const [user, setUser] = useState<User | null>(null)
@@ -67,6 +68,10 @@ function App() {
           element={user ? <Dashboard user={user} /> : <Navigate to="/login" />} 
         />
         <Route 
+          path="/about" 
+          element={<AboutPage />} 
+        />
+        <Route 
           path="/submit" 
           element={user ? <SubmitEssay /> : <Navigate to="/login" />} 
         />
@@ -98,7 +103,7 @@ function App() {
           path="/admin/submissions/:id" 
           element={user?.role === 'admin' ? <AdminEssayDetail /> : <Navigate to="/login" />} 
         />
-        <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
+        <Route path="/" element={<Navigate to={user ? "/dashboard" : "/about"} />} />
       </Routes>
     </div>
   )

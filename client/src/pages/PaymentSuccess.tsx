@@ -11,7 +11,7 @@ const PaymentSuccess: React.FC = () => {
 
   useEffect(() => {
     if (!sessionId) {
-      setError('Payment session not found')
+      /*setError('Payment session not found')*/
       setLoading(false)
       return
     }

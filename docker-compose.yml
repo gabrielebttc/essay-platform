@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  client:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
+    ports:
+      - "3005:80"
+    networks:
+      - essay-platform-network
+
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    ports:
+      - "5001:5000"
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://postgres:password@db:5432/essay-platform
+      JWT_SECRET: your_jwt_secret
+      STRIPE_SECRET_KEY: your_stripe_secret_key
+    networks:
+      - essay-platform-network
+
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: essay-platform
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - ./server/src/config/schema.sql:/docker-entrypoint-initdb.d/1_schema.sql
+      - ./server/src/config/seed.sql:/docker-entrypoint-initdb.d/2_seed.sql
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - essay-platform-network
+
+networks:
+  essay-platform-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

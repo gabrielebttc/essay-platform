@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layout, ShieldCheck, GraduationCap, CreditCard, Diff, LogIn } from 'lucide-react';
+import { ShieldCheck, GraduationCap, CreditCard, Diff, LogIn } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const AboutPage: React.FC = () => {

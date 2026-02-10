@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { useSearchParams, useNavigate, Link } from 'react-router-dom'
+import { useSearchParams, Link } from 'react-router-dom'
 import { essayService } from '../services/essay'
 import { Loader2, AlertTriangle } from 'lucide-react'
 
@@ -8,7 +8,6 @@ const PaymentCancel: React.FC = () => {
   const essayId = searchParams.get('essay_id')
   const [loading, setLoading] = useState(true)
   const [, setError] = useState('')
-  const navigate = useNavigate()
 
   useEffect(() => {
     if (essayId) {

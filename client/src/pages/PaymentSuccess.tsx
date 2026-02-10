@@ -1,13 +1,11 @@
 import React, { useEffect, useState } from 'react'
-import { useSearchParams, useNavigate, Link } from 'react-router-dom'
-import { CheckCircle, Loader2, XCircle } from 'lucide-react'
+import { useSearchParams, Link } from 'react-router-dom'
+import { CheckCircle, Loader2 } from 'lucide-react'
 
 const PaymentSuccess: React.FC = () => {
   const [searchParams] = useSearchParams()
   const sessionId = searchParams.get('session_id')
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const navigate = useNavigate()
 
   useEffect(() => {
     if (!sessionId) {
@@ -34,28 +32,6 @@ const PaymentSuccess: React.FC = () => {
         <p className="mt-2 text-sm text-gray-500">
           Please wait while we confirm your submission.
         </p>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-8 text-center">
-          <XCircle className="mx-auto h-12 w-12 text-red-500" />
-          <h2 className="mt-6 text-2xl font-semibold text-gray-900">
-            Payment Processing Error
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            {error}
-          </p>
-          <Link
-            to="/dashboard"
-            className="mt-6 inline-block w-full bg-indigo-600 border border-transparent rounded-md py-2 px-4 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            Go to Dashboard
-          </Link>
-        </div>
       </div>
     )
   }

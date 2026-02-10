@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { essayService } from '../services/essay';
 import { Essay, EssayType } from '../types';
 import { diff_match_patch, DIFF_DELETE, DIFF_INSERT } from 'diff-match-patch';
@@ -9,7 +9,6 @@ const EssayDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const reviewKey = searchParams.get('reviewKey');
-  const navigate = useNavigate();
   const [essay, setEssay] = useState<Essay | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

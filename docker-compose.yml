@@ -28,7 +28,7 @@ services:
   db:
     image: postgres:13
     environment:
-      POSTGRES_DB: ielts_essay_platform_db
+      POSTGRES_DB: essay-platform
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
     volumes:

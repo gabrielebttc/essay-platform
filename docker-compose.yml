@@ -28,9 +28,9 @@ services:
   db:
     image: postgres:13
     environment:
-      POSTGRES_DB: essay-platform
+      POSTGRES_DB: ielts_essay_platform_db
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: estelle
     volumes:
       - ./server/src/config/schema.sql:/docker-entrypoint-initdb.d/1_schema.sql
       - ./server/src/config/seed.sql:/docker-entrypoint-initdb.d/2_seed.sql

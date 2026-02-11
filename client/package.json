@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "start": "serve -s dist -l 80",
     "preview": "vite preview"
   },
   "dependencies": {
+    "serve": "^14.2.3",
     "@stripe/stripe-js": "^8.7.0",
     "@tailwindcss/postcss": "^4.1.18",
     "@vitejs/plugin-react": "^5.1.3",

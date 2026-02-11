@@ -18,15 +18,6 @@ COPY client/.env.docker ./.env
 # Build the application for production
 RUN npm run build
 
-# Stage 2: Serve the application with Nginx
-FROM nginx:alpine
-
-# Copy the build output from the build stage
-COPY --from=build /app/dist /usr/share/nginx/html
-
-# Copy our custom Nginx configuration
-COPY client/nginx.conf /etc/nginx/conf.d/default.conf
-
 # Expose port 80
 EXPOSE 80
 

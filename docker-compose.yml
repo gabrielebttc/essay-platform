@@ -7,6 +7,8 @@ services:
       dockerfile: client/Dockerfile
     ports:
       - "3005:80"
+    env_file:
+      - client/.env.docker
     networks:
       - essay-platform-network
 
@@ -18,10 +20,8 @@ services:
       - "5001:5000"
     depends_on:
       - db
-    environment:
-      DATABASE_URL: postgresql://postgres:password@db:5432/essay-platform
-      JWT_SECRET: your_jwt_secret
-      STRIPE_SECRET_KEY: your_stripe_secret_key
+    env_file:
+      - server/.env.docker
     networks:
       - essay-platform-network
 

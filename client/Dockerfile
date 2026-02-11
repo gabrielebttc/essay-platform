@@ -12,6 +12,9 @@ RUN npm install
 # Copy the rest of the client application files
 COPY client/ ./
 
+# Overwrite the .env file with the one for docker
+COPY client/.env.docker ./.env
+
 # Build the application for production
 RUN npm run build
 

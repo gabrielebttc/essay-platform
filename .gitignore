@@ -1,2 +1,6 @@
 client/node_modules
 server/node_modules
+
+# Docker-specific environment files
+client/.env.docker
+server/.env.docker

@@ -42,8 +42,6 @@ services:
       - ./server/src/config/schema.sql:/docker-entrypoint-initdb.d/1_schema.sql
       - ./server/src/config/seed.sql:/docker-entrypoint-initdb.d/2_seed.sql
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5435:5432"
     networks:
       - essay-platform-network
 

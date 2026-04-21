@@ -1,0 +1,215 @@
+import { Request, Response } from 'express'
+import pool from '../config/database'
+import stripe from '../config/stripe'
+import { generateToken } from '../utils/jwt'
+import nodemailer from 'nodemailer'
+import Stripe from 'stripe'
+
+const emailTransporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST,
+  port: parseInt(process.env.EMAIL_PORT || '587'),
+  secure: process.env.EMAIL_SECURE === 'true',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+})
+
+export const createPaymentLink = async (req: any, res: Response) => {
+  const { taskTypeId, content } = req.body
+  const userId = req.user.userId
+
+  try {
+    // Create essay record
+    const essayResult = await pool.query(
+      'INSERT INTO essays (user_id, task_type_id, content, status) VALUES ($1, $2, $3, $4) RETURNING id',
+      [userId, taskTypeId, content, 'pending_payment']
+    )
+    const essayId = essayResult.rows[0].id
+
+    // Get user info
+    const userResult = await pool.query(
+      'SELECT email, name FROM users WHERE id = $1',
+      [userId]
+    )
+    const user = userResult.rows[0]
+
+    const taskTypeResult = await pool.query(
+      'SELECT * FROM essay_types WHERE id = $1',
+      [taskTypeId]
+    )
+
+    const taskType = taskTypeResult.rows[0]
+
+    // Payment Links format
+    const paymentLink = await stripe.paymentLinks.create({
+      after_completion: {
+        type: 'redirect',
+        redirect: {
+          url: `${process.env.FRONTEND_URL}/payment/success?essay_id=${essayId}`
+        }
+      },
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: taskType.name,
+            description: `${taskType.name} - Review`,
+          },
+          unit_amount: taskType.price * 100,
+        },
+        quantity: 1,
+      }],
+    })
+
+    // Create payment record
+    await pool.query(
+      'INSERT INTO payments (user_id, essay_id, amount, currency, status, stripe_payment_intent_id) VALUES ($1, $2, $3, $4, $5, $6)',
+      [userId, essayId, taskType.price, 'usd', 'pending', paymentLink.id]
+    )
+
+    res.json({ 
+      paymentUrl: paymentLink.url,
+      essayId 
+    })
+  } catch (error) {
+    console.error('Create payment link error:', error)
+    res.status(500).json({ error: 'Failed to create payment link' })
+  }
+}
+
+export const handleStripeWebhook = async (req: Request, res: Response) => {
+  const sig = req.headers['stripe-signature'] as string
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+
+  if (!webhookSecret) {
+    console.error('Stripe webhook secret not configured')
+    return res.status(500).json({ error: 'Webhook secret not configured' })
+  }
+
+  let event: Stripe.Event
+
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret)
+  } catch (err: any) {
+    console.error('Webhook signature verification failed:', err.message)
+    return res.status(400).send(`Webhook signature verification failed: ${err.message}`)
+  }
+
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed':
+        const session = event.data.object as Stripe.Checkout.Session
+        await handleSuccessfulPayment(session)
+        break
+
+      case 'checkout.session.expired':
+        const expiredSession = event.data.object as Stripe.Checkout.Session
+        await handleExpiredPayment(expiredSession)
+        break
+
+      default:
+        console.log(`Unhandled event type: ${event.type}`)
+    }
+  } catch (error) {
+    console.error('Error processing webhook:', error)
+    return res.status(500).json({ error: 'Failed to process webhook' })
+  }
+
+  res.json({ received: true })
+}
+
+async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
+  const essayId = session.metadata?.essayId
+  const userId = session.metadata?.userId
+
+  if (!essayId || !userId) {
+    console.error('Missing metadata in successful payment')
+    return
+  }
+
+  try {
+    await pool.query('BEGIN')
+
+    // Update essay status
+    await pool.query(
+      'UPDATE essays SET status = $1 WHERE id = $2',
+      ['pending', essayId]
+    )
+
+    // Update payment status
+    await pool.query(
+      'UPDATE payments SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE essay_id = $2 AND stripe_payment_intent_id = $3',
+      ['completed', essayId, session.payment_intent as string]
+    )
+
+    // Get user info for email
+    const userResult = await pool.query(
+      'SELECT email, name FROM users WHERE id = $1',
+      [userId]
+    )
+    const user = userResult.rows[0]
+
+    // Send confirmation email
+    await emailTransporter.sendMail({
+      from: process.env.EMAIL_FROM,
+      to: user.email,
+      subject: 'Essay Submission Confirmed',
+      html: `
+        <h2>Essay Submission Confirmed</h2>
+        <p>Hi ${user.name},</p>
+        <p>Your IELTS essay has been successfully submitted for review. Our examiners will review your essay and provide detailed feedback within 24-48 hours.</p>
+        <p>You can track the status of your submission in your dashboard.</p>
+        <p>Thank you for choosing our service!</p>
+      `,
+    })
+
+    await pool.query('COMMIT')
+    console.log('Successfully processed payment for essay:', essayId)
+  } catch (error) {
+    await pool.query('ROLLBACK')
+    console.error('Error processing successful payment:', error)
+    throw error
+  }
+}
+
+async function handleExpiredPayment(session: Stripe.Checkout.Session) {
+  const essayId = session.metadata?.essayId
+
+  if (!essayId) {
+    console.error('Missing essay ID in expired payment')
+    return
+  }
+
+  try {
+    // Update payment status to failed
+    await pool.query(
+      'UPDATE payments SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE essay_id = $2 AND stripe_payment_intent_id = $3',
+      ['failed', essayId, session.payment_intent as string]
+    )
+
+    console.log('Payment expired for essay:', essayId)
+  } catch (error) {
+    console.error('Error handling expired payment:', error)
+  }
+}
+
+export const getPaymentStatus = async (req: Request, res: Response) => {
+  const { paymentId } = req.params
+
+  try {
+    const result = await pool.query(
+      'SELECT status, amount, currency, created_at FROM payments WHERE id = $1',
+      [paymentId]
+    )
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Payment not found' })
+    }
+
+    res.json(result.rows[0])
+  } catch (error) {
+    console.error('Get payment status error:', error)
+    res.status(500).json({ error: 'Failed to get payment status' })
+  }
+}

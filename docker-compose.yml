@@ -1,45 +1,48 @@
+version: '3.8'
+
 services:
-  # --- BACKEND NODE.JS ---
-  backend:
-    build: ./backend
-    container_name: miotek-backend
-    restart: always
-    ports:
-      - "5001:5000"
-    environment:
-      - DB_HOST=${DB_HOST}
-      - DB_PORT=${DB_PORT}
-      - DB_NAME=${ielts_essay_platform}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-
-      - JWT_SECRET=${JWT_SECRET}
-
-      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
-      - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
-
-      - EMAIL_HOST=${EMAIL_HOST}
-      - EMAIL_PORT=${EMAIL_PORT}
-      - EMAIL_USER=${EMAIL_USER}
-      - EMAIL_PASS=${EMAIL_USER}
-      - EMAIL_FROM=${EMAIL_FROM}
-    networks:
-      - essayplatform-network
-
-  # --- FRONTEND REACT/VITE ---
-  frontend:
+  client:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        - VITE_API_BASE_URL=${VITE_API_BASE_URL}
-    container_name: miotek-frontend
-    restart: always
+      context: .
+      dockerfile: client/Dockerfile
     ports:
       - "3005:80"
+    env_file:
+      - client/.env.docker
     networks:
-      - essayplatform-network
+      - essay-platform-network
+
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    ports:
+      - "5001:5000"
+    depends_on:
+      - db
+    env_file:
+      - server/.env.docker
+    networks:
+      - essay-platform-network
+
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: essay-platform
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - ./server/src/config/schema.sql:/docker-entrypoint-initdb.d/1_schema.sql
+      - ./server/src/config/seed.sql:/docker-entrypoint-initdb.d/2_seed.sql
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5435:5432"
+    networks:
+      - essay-platform-network
 
 networks:
-  essayplatform-network:
+  essay-platform-network:
     driver: bridge
+
+volumes:
+  postgres_data:

@@ -9,9 +9,12 @@ import Dashboard from './pages/Dashboard'
 import SubmitEssay from './pages/SubmitEssay'
 import EssayList from './pages/EssayList'
 import EssayDetail from './pages/EssayDetail'
+import PaymentSuccess from './pages/PaymentSuccess'
+import PaymentCancel from './pages/PaymentCancel'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminSubmissions from './pages/admin/AdminSubmissions'
 import AdminEssayDetail from './pages/admin/AdminEssayDetail'
+import AboutPage from './pages/AboutPage'
 
 function App() {
   const [user, setUser] = useState<User | null>(null)
@@ -45,11 +48,11 @@ function App() {
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>
+    return <div >Loading...</div>
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div >
       {user && <Navbar user={user} onLogout={logout} />}
       <Routes>
         <Route 
@@ -65,6 +68,10 @@ function App() {
           element={user ? <Dashboard user={user} /> : <Navigate to="/login" />} 
         />
         <Route 
+          path="/about" 
+          element={<AboutPage />} 
+        />
+        <Route 
           path="/submit" 
           element={user ? <SubmitEssay /> : <Navigate to="/login" />} 
         />
@@ -77,7 +84,15 @@ function App() {
           element={user ? <EssayDetail /> : <Navigate to="/login" />} 
         />
         <Route 
-          path="/admin" 
+          path="/payment/success" 
+          element={user ? <PaymentSuccess /> : <Navigate to="/login" />} 
+        />
+        <Route 
+          path="/payment/cancel" 
+          element={user ? <PaymentCancel /> : <Navigate to="/login" />} 
+        />
+        <Route 
+          path="/admin/dashboard" 
           element={user?.role === 'admin' ? <AdminDashboard /> : <Navigate to="/login" />} 
         />
         <Route 
@@ -88,7 +103,7 @@ function App() {
           path="/admin/submissions/:id" 
           element={user?.role === 'admin' ? <AdminEssayDetail /> : <Navigate to="/login" />} 
         />
-        <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
+        <Route path="/" element={<Navigate to={user ? "/dashboard" : "/about"} />} />
       </Routes>
     </div>
   )

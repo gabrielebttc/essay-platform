@@ -72,12 +72,16 @@ cd ielts-essay-platform
 
 1. Create a PostgreSQL database:
 ```sql
-CREATE DATABASE ielts_essay_platform;
+CREATE DATABASE ielts_essay_platform_db;
 ```
 
-2. Run the database schema:
+2. Run the database schema 2 times:
 ```bash
-psql -d ielts_essay_platform -f server/src/config/schema.sql
+psql -U postgres -d ielts_essay_platform_db -f server/src/config/schema.sql
+```
+and then run seed 1 time:
+```bash
+psql -U postgres -d ielts_essay_platform_db -f server/src/config/seed.sql
 ```
 
 ### 3. Backend Setup

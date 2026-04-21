@@ -1,18 +1,17 @@
-FROM node:18 AS build-stage
+FROM node:18-alpine AS build
+
 WORKDIR /app
 
-ARG VITE_API_BASE_URL
+ARG VITE_BACKEND_URL
+ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
 
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
-
-COPY package*.json ./
+COPY ./client/package*.json ./
 RUN npm install
-COPY . .
+COPY ./client/ ./
 RUN npm run build
 
-# Stage 2: Serve con Nginx
 FROM nginx:stable-alpine
-COPY --from=build-stage /app/dist /usr/share/nginx/html
+COPY --from=build /app/dist /usr/share/nginx/html
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

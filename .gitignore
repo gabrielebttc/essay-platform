@@ -2,5 +2,7 @@ client/node_modules
 server/node_modules
 server/.env
 server/.env.local
+server/.env.docker
 client/.env
 client/.env.local
+client/build

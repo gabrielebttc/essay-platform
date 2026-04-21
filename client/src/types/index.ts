@@ -10,12 +10,14 @@ export interface User {
 export interface Essay {
   id: string
   userId: string
-  taskType: 'task1' | 'task2'
+  taskTypeId: string
   content: string
-  status: 'pending' | 'in_review' | 'completed'
+  status: 'pending_payment' | 'pending' | 'in_review' | 'completed'
   submittedAt: string
   paymentId?: string
   feedback?: EssayFeedback
+  user?: User;
+  paymentStatus?: string;
 }
 
 export interface EssayFeedback {
@@ -29,6 +31,13 @@ export interface EssayFeedback {
   comments: string
   improvedVersion?: string
   completedAt: string
+}
+
+export interface EssayType {
+  id: string
+  name: string
+  price: number
+  minWords: number | null
 }
 
 export interface Payment {

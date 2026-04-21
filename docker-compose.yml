@@ -1,0 +1,45 @@
+services:
+  # --- BACKEND NODE.JS ---
+  backend:
+    build: ./backend
+    container_name: miotek-backend
+    restart: always
+    ports:
+      - "5001:5000"
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${ielts_essay_platform}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+
+      - JWT_SECRET=${JWT_SECRET}
+
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
+
+      - EMAIL_HOST=${EMAIL_HOST}
+      - EMAIL_PORT=${EMAIL_PORT}
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASS=${EMAIL_USER}
+      - EMAIL_FROM=${EMAIL_FROM}
+    networks:
+      - essayplatform-network
+
+  # --- FRONTEND REACT/VITE ---
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL}
+    container_name: miotek-frontend
+    restart: always
+    ports:
+      - "3005:80"
+    networks:
+      - essayplatform-network
+
+networks:
+  essayplatform-network:
+    driver: bridge

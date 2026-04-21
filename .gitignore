@@ -1,8 +1,10 @@
 client/node_modules
 server/node_modules
+.env
 server/.env
 server/.env.local
 server/.env.docker
 client/.env
 client/.env.local
 client/build
+client/.env.docker

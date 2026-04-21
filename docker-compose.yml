@@ -5,10 +5,11 @@ services:
     build:
       context: .
       dockerfile: client/Dockerfile
+      args:
+        VITE_BACKEND_URL: ${VITE_BACKEND_URL}
+        VITE_STRIPE_PUBLISHABLE_KEY: ${VITE_STRIPE_PUBLISHABLE_KEY}
     ports:
       - "3005:80"
-    env_file:
-      - client/.env.docker
     networks:
       - essay-platform-network
 
@@ -19,7 +20,8 @@ services:
     ports:
       - "5001:5000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     env_file:
       - server/.env.docker
     networks:
@@ -28,9 +30,14 @@ services:
   db:
     image: postgres:13
     environment:
-      POSTGRES_DB: essay-platform
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     volumes:
       - ./server/src/config/schema.sql:/docker-entrypoint-initdb.d/1_schema.sql
       - ./server/src/config/seed.sql:/docker-entrypoint-initdb.d/2_seed.sql
